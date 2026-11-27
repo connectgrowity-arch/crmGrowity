@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Growity CRM · Extended Voiceover Tutorial Player (Phase 1)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
+    }
+    .active-card { animation: pulseGlow 1.8s infinite; }
+    .cursor-pointer-sim { transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); z-index: 9999; }
+    .fade-scene { animation: fadeIn 0.4s ease-in-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased select-none">
+
+  <!-- Top Header Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/95 px-6 py-3 flex items-center justify-between backdrop-blur sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20 text-lg">
+        G
+      </div>
+      <div>
+        <h1 class="text-sm font-bold tracking-wide text-white flex items-center gap-2">
+          Growity CRM · Phase 1 Tutorial
+          <span class="bg-blue-950 text-blue-400 text-[10px] px-2 py-0.5 rounded-full border border-blue-800">Extended Audio</span>
+        </h1>
+        <p class="text-xs text-slate-400">Interactive Walkthrough & Video Exporter</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-2.5">
+      <!-- Voice Language Selector -->
+      <div class="flex items-center gap-1.5 bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-700">
+        <span class="text-xs text-slate-400">🎙️ Voice:</span>
+        <select id="voiceLangSelect" onchange="changeVoiceLanguage(this.value)" class="bg-slate-900 text-xs text-blue-300 font-medium px-2 py-1 rounded border border-slate-700 cursor-pointer focus:outline-none">
+          <option value="manglish" selected>Manglish (Clear Indian Voice)</option>
+          <option value="malayalam">Malayalam (മലയാളം ലിപി)</option>
+          <option value="english">English (Professional)</option>
+        </select>
+      </div>
+
+      <button id="toggleAudioBtn" onclick="toggleAudio()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 flex items-center gap-1.5 border border-slate-700 transition">
+        <span id="audioIcon">🔊</span> <span id="audioText">Mute</span>
+      </button>
+
+      <button onclick="openScriptModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 flex items-center gap-1.5 transition">
+        📋 Script
+      </button>
+
+      <!-- 1-Click Video Download Button -->
+      <button onclick="startAutoRecordAndDownload()" id="autoRecordBtn" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white flex items-center gap-1.5 shadow-lg shadow-emerald-600/30 transition animate-pulse">
+        <span>⬇️</span> Download Video
+      </button>
+
+      <button onclick="openHelpModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition">
+        ❓ Where is my File?
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Player Layout -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+
+    <!-- Video Stage (Left 3 cols) -->
+    <div class="lg:col-span-3 flex flex-col gap-3">
+      <!-- Simulated Browser Monitor (16:9 Aspect Ratio) -->
+      <div id="videoMonitorContainer" class="relative w-full aspect-video bg-slate-900 rounded-xl overflow-hidden border border-slate-800 shadow-2xl flex flex-col">
+        
+        <!-- Browser Top Chrome -->
+        <div class="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400 select-none">
+          <div class="flex items-center gap-2">
+            <div class="flex gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500/80 inline-block"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block"></span>
+            </div>
+            <span class="ml-2 font-mono text-[11px] text-slate-300 bg-slate-900 px-3 py-0.5 rounded border border-slate-800" id="addressBar">
+              https://crm.growity.in/dashboard
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="recordingBadge" class="hidden bg-red-950 text-red-400 border border-red-800 text-[10px] px-2.5 py-0.5 rounded-full font-mono flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span> RECORDING VIDEO...
+            </span>
+            <span id="liveBadge" class="bg-emerald-950 text-emerald-400 border border-emerald-800/60 text-[10px] px-2.5 py-0.5 rounded-full font-mono flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Live Simulation
+            </span>
+            <span id="sceneBadge" class="text-[11px] font-semibold text-blue-400 bg-blue-950/60 px-2 py-0.5 rounded border border-blue-900">
+              Scene 1 / 6
+            </span>
+          </div>
+        </div>
+
+        <!-- Virtual Screen Viewport -->
+        <div id="viewport" class="relative flex-1 bg-slate-900 overflow-hidden flex flex-col text-slate-200">
+          
+          <!-- Virtual Mouse Cursor Pointer -->
+          <div id="virtualCursor" class="cursor-pointer-sim absolute top-10 left-10 pointer-events-none drop-shadow-xl opacity-0">
+            <svg class="w-6 h-6 text-amber-400 filter drop-shadow-md" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4 2v18l5.5-5.5L14 20l2-1-4.5-5.5H19L4 2z"/>
+            </svg>
+            <div id="cursorClickRing" class="absolute -top-2 -left-2 w-10 h-10 rounded-full border-2 border-amber-400 opacity-0 transition-all duration-300"></div>
+          </div>
+
+          <!-- Dynamic Scenes Container -->
+          <div id="sceneContainer" class="w-full h-full p-4 flex flex-col justify-center items-center">
+            <!-- Scene content injected via JS -->
+          </div>
+
+        </div>
+
+        <!-- On-Screen Subtitles & Voice Narration Bar -->
+        <div class="bg-slate-950/95 border-t border-slate-800 px-5 py-3 min-h-[68px] flex items-center justify-between">
+          <div class="flex items-start gap-3 w-full">
+            <span class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded tracking-wider shrink-0 mt-0.5 shadow-sm">
+              VOICE OVER
+            </span>
+            <div class="flex-1">
+              <p id="subtitlesText" class="text-xs md:text-sm text-slate-100 font-medium leading-relaxed">
+                ലളിതമായ വോയ്‌സ്‌ഓവറോടെ ട്യൂട്ടോറിയൽ ആരംഭിക്കുന്നു...
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Player Controls Bar -->
+        <div class="bg-slate-950 px-4 py-2.5 border-t border-slate-800 flex flex-col gap-2">
+          <!-- Timeline scrubber -->
+          <div class="w-full bg-slate-800/80 h-2 rounded-full overflow-hidden cursor-pointer" onclick="seekTimeline(event)">
+            <div id="progressBar" class="bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 h-full w-0 transition-all duration-200"></div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <div class="flex items-center gap-3">
+              <button id="playPauseBtn" onclick="togglePlayPause()" class="w-9 h-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-600/30 transition">
+                <svg id="playIcon" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg id="pauseIcon" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              </button>
+              <button onclick="prevScene()" class="text-slate-300 hover:text-white text-xs px-2.5 py-1.5 rounded bg-slate-900 border border-slate-800 hover:bg-slate-800 transition">
+                ⏮ Prev
+              </button>
+              <button onclick="nextScene()" class="text-slate-300 hover:text-white text-xs px-2.5 py-1.5 rounded bg-slate-900 border border-slate-800 hover:bg-slate-800 transition">
+                Next ⏭
+              </button>
+              <span id="timeDisplay" class="text-xs font-mono text-slate-400 ml-1">00:00 / 00:28</span>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+              <select id="speedSelect" onchange="setPlaybackSpeed(this.value)" class="bg-slate-900 text-slate-300 text-xs px-2.5 py-1 rounded border border-slate-800 cursor-pointer focus:outline-none">
+                <option value="0.9">0.9x Relaxed</option>
+                <option value="1" selected>1.0x Normal</option>
+                <option value="1.2">1.2x Faster</option>
+              </select>
+              <button onclick="replayCurrent()" class="text-slate-300 hover:text-white text-xs px-2.5 py-1 rounded bg-slate-900 border border-slate-800 hover:bg-slate-800 transition" title="Replay Scene">
+                🔄 Replay
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Action Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        <div class="bg-slate-900/90 border border-emerald-900/60 p-3.5 rounded-xl flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-base shrink-0">
+            ⬇️
+          </div>
+          <div>
+            <h4 class="font-bold text-white">Direct Browser Download</h4>
+            <p class="text-slate-400 text-[11px] mt-0.5">Click the green <b>"Download Video"</b> button above. Select "Chrome Tab", and it will play and auto-save the video to your <b>Downloads</b> folder!</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-blue-900/60 p-3.5 rounded-xl flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center text-base shrink-0">
+            📁
+          </div>
+          <div>
+            <h4 class="font-bold text-white">Where Windows Saves MP4</h4>
+            <p class="text-slate-400 text-[11px] mt-0.5">If you used <kbd class="px-1 rounded bg-slate-800 text-slate-200">Win + Alt + R</kbd>, your MP4 is already inside <b>This PC → Videos → Captures</b>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Chapters & Scripts -->
+    <div class="lg:col-span-1 bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col gap-3">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h2 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+          <span>🎬</span> Video Chapters
+        </h2>
+        <span class="text-[11px] text-blue-400 font-semibold">6 Modules</span>
+      </div>
+
+      <div id="chaptersList" class="flex flex-col gap-1.5 overflow-y-auto max-h-[460px]">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="border-t border-slate-800 pt-3 mt-auto flex flex-col gap-2">
+        <button onclick="jumpToScene(0)" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold transition text-center">
+          ↺ Restart from Scene 1
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Script Viewer Modal -->
+  <div id="scriptModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[85vh] flex flex-col">
+      <button onclick="closeScriptModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
+      
+      <div class="mb-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>📋</span> Complete Voiceover Script (Malayalam & Manglish)
+        </h3>
+        <p class="text-xs text-slate-400">Copy this text directly into ElevenLabs, Clipchamp, or read it manually while recording.</p>
+      </div>
+
+      <div id="fullScriptBox" class="flex-1 overflow-y-auto space-y-4 text-xs text-slate-300 pr-2">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
+        <button onclick="copyFullScript()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold flex items-center gap-1.5">
+          <span>📄</span> Copy All Script to Clipboard
+        </button>
+        <button onclick="closeScriptModal()" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Modal: Where is my File? -->
+  <div id="helpModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-lg w-full p-6 shadow-2xl relative">
+      <button onclick="closeHelpModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
+      
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-xl">
+          📁
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">How to Download or Find Your Video</h3>
+          <p class="text-xs text-slate-400">Two easiest ways to get your video file</p>
+        </div>
+      </div>
+
+      <div class="space-y-3.5 text-xs text-slate-300">
+        <!-- Method 1 -->
+        <div class="p-3.5 rounded-lg bg-emerald-950/40 border border-emerald-800/60 flex items-start gap-3">
+          <span class="text-emerald-400 text-lg">1️⃣</span>
+          <div>
+            <p class="font-bold text-white text-sm">Direct Browser Download (Recommended)</p>
+            <p class="text-slate-300 text-[11px] mt-1">
+              Click the green <b>"⬇️ Download Video"</b> button on the top right. Select this browser tab. It will play the whole video with audio and automatically download the file into your <b>Downloads</b> folder!
+            </p>
+          </div>
+        </div>
+
+        <!-- Method 2 -->
+        <div class="p-3.5 rounded-lg bg-slate-800/60 border border-slate-700/60 flex items-start gap-3">
+          <span class="text-blue-400 text-lg">2️⃣</span>
+          <div>
+            <p class="font-bold text-white text-sm">Find Windows Screen Recording (.MP4)</p>
+            <p class="text-slate-300 text-[11px] mt-1">
+              If you pressed <kbd class="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200 font-mono">Win + Alt + R</kbd>, Windows already saved the MP4!
+            </p>
+            <div class="mt-2 p-2 rounded bg-slate-950 font-mono text-[10px] text-blue-300 border border-slate-800">
+              C:\Users\SAJID K H\Videos\Captures
+            </div>
+            <p class="text-slate-400 text-[10px] mt-1">
+              Shortcut: Press <kbd class="px-1 rounded bg-slate-800">Win + R</kbd>, type <code>videos\captures</code>, and press Enter.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button onclick="closeHelpModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold">
+          Got it!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Extended Tutorial Engine Script -->
+  <script>
+    const scenes = [
+      {
+        id: 0,
+        title: "1. Intro & Architecture",
+        subtitle: "Growity CRM V1 സമഗ്ര ആമുഖം",
+        address: "https://crm.growity.in",
+        duration: 22000,
+        subtitles: "ഹലോ ടീം, Growity CRM-ന്റെ ഒഫീഷ്യൽ ട്യൂട്ടോറിയൽ വീഡിയോയിലേക്ക് സ്വാഗതം. നമ്മുടെ മൂന്ന് പ്രധാന ബിസിനസ്സ് വെർട്ടിക്കലുകളായ Growity Agency, Scalora, Growity Academy എന്നിവ ഒരൊറ്റ സെൻട്രലൈസ്ഡ് പ്ലാറ്റ്‌ഫോമിൽ മാനേജ് ചെയ്യാൻ നിർമ്മിച്ചതാണ് ഈ സിസ്റ്റം. ഈ വീഡിയോയിലൂടെ സിസ്റ്റം എങ്ങനെ ലളിതമായി ഉപയോഗിക്കാം എന്ന് നമുക്ക് പഠിക്കാം.",
+        voiceovers: {
+          manglish: "Hello team, welcome to Growity CRM official tutorial. Nammude moonu pradhaana business verticals aaya Growity Agency, Scalora, matrum Growity Academy ivaye ellaam orotta centralized platformil manage cheyyaan vendiyaanu ee system create cheythittullathu. Ee videoyilude CRM engane simple aayi upayogikkaam ennu namukku kooduthal aayi manassilaakkaam.",
+          malayalam: "ഹലോ ടീം, Growity CRM-ന്റെ ഒഫീഷ്യൽ ട്യൂട്ടോറിയൽ വീഡിയോയിലേക്ക് സ്വാഗതം. നമ്മുടെ മൂന്ന് പ്രധാന ബിസിനസ്സ് വെർട്ടിക്കലുകളായ Growity Agency, Scalora, Growity Academy എന്നിവ ഒരൊറ്റ സെൻട്രലൈസ്ഡ് പ്ലാറ്റ്‌ഫോമിൽ മാനേജ് ചെയ്യാൻ നിർമ്മിച്ചതാണ് ഈ സിസ്റ്റം. ഈ വീഡിയോയിലൂടെ സിസ്റ്റം എങ്ങനെ ലളിതമായി ഉപയോഗിക്കാം എന്ന് നമുക്ക് പഠിക്കാം.",
+          english: "Hello team, welcome to the official Growity CRM tutorial walkthrough. This platform serves as a unified system powering all three of our business verticals: Growity Agency, Scalora, and Growity Academy. In this video, we will walk you through how to use the CRM effectively."
+        },
+        render: () => `
+          <div class="text-center max-w-lg p-6 fade-scene">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-3xl font-bold text-white shadow-xl shadow-blue-500/25 mb-4 animate-bounce">
+              G
+            </div>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Growity Central CRM</h2>
+            <p class="text-xs text-blue-400 font-semibold tracking-wider uppercase mt-1">Multi-Vertical Architecture</p>
+            
+            <div class="grid grid-cols-3 gap-2 mt-4 text-xs">
+              <div class="p-2 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                <span class="block font-bold text-blue-400">AGY</span>
+                Growity Agency
+              </div>
+              <div class="p-2 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                <span class="block font-bold text-indigo-400">SCL</span>
+                Scalora
+              </div>
+              <div class="p-2 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                <span class="block font-bold text-emerald-400">ACD</span>
+                Growity Academy
+              </div>
+            </div>
+
+            <div class="mt-5 flex items-center justify-center gap-2">
+              <span class="px-2.5 py-1 rounded bg-slate-800 text-[11px] border border-slate-700 text-slate-300">Next.js 15 & Supabase</span>
+              <span class="px-2.5 py-1 rounded bg-emerald-950 text-[11px] border border-emerald-800 text-emerald-300">Row Level Security</span>
+            </div>
+          </div>
+        `,
+        actions: []
+      },
+      {
+        id: 1,
+        title: "2. Secure Sign In & Auth",
+        subtitle: "എൻ്റർപ്രൈസ് ലോഗിൻ രീതി",
+        address: "https://crm.growity.in/login",
+        duration: 26000,
+        subtitles: "ആദ്യമായി ലോഗിൻ ചെയ്യുന്ന വിധം നോക്കാം. കമ്പനിയുടെ സെക്യൂരിറ്റി കണക്കിലെടുത്ത് ഈ CRM-ൽ പൊതുവായ സൈൻ-അപ്പ് അനുവദിച്ചിട്ടില്ല. അഡ്മിൻ നിങ്ങൾക്ക് നൽകുന്ന ഔദ്യോഗിക ഇമെയിൽ ഐഡിയും പാസ്‌വേർഡും ഉപയോഗിച്ച് മാത്രമേ ലോഗിൻ ചെയ്യാൻ കഴിയൂ. പാസ്‌വേർഡ് മറന്നുപോയാൽ 'Forgot Password' വഴി റീസെറ്റ് ചെയ്യാം.",
+        voiceovers: {
+          manglish: "Aadyamaayi login cheyyunna reethi nokkaam. Company-yude data security munnirthi ee CRMil open aayulla public sign up anuvadichittilla. Admin ningalkku nalkunna official email id-yum passwordum upayogichu maathrame login cheyyaan kazhiyu. Password marannupoyaal thaazheyulla Forgot password link vazhi ningalude mailil reset cheyyaavunnathaanu.",
+          malayalam: "ആദ്യമായി ലോഗിൻ ചെയ്യുന്ന വിധം നോക്കാം. കമ്പനിയുടെ സെക്യൂരിറ്റി കണക്കിലെടുത്ത് ഈ CRM-ൽ പൊതുവായ സൈൻ-അപ്പ് അനുവദിച്ചിട്ടില്ല. അഡ്മിൻ നിങ്ങൾക്ക് നൽകുന്ന ഔദ്യോഗിക ഇമെയിൽ ഐഡിയും പാസ്‌വേർഡും ഉപയോഗിച്ച് മാത്രമേ ലോഗിൻ ചെയ്യാൻ കഴിയൂ. പാസ്‌വേർഡ് മറന്നുപോയാൽ 'Forgot Password' വഴി റീസെറ്റ് ചെയ്യാം.",
+          english: "First, let us explore how to sign in. For enterprise data security, self-registration is disabled. Only accounts provisioned by an administrator can sign in. If you ever forget your password, simply click 'Forgot password' to receive a secure password recovery link."
+        },
+        render: () => `
+          <div class="w-full max-w-sm bg-slate-950 border border-slate-800 rounded-xl p-6 shadow-2xl fade-scene">
+            <div class="mb-4">
+              <h3 class="text-base font-bold text-white">Sign in to Growity CRM</h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">Enter your assigned organization credentials</p>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Work Email</label>
+                <div id="demoEmailField" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs text-slate-300 font-mono">
+                  &nbsp;
+                </div>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Password</label>
+                <div id="demoPasswordField" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs text-slate-300 font-mono">
+                  &nbsp;
+                </div>
+              </div>
+              <button id="demoLoginBtn" class="w-full py-2 bg-blue-600 rounded text-xs font-semibold text-white mt-2 transition hover:bg-blue-500 shadow-md shadow-blue-600/30">
+                Sign In
+              </button>
+              <div class="text-center pt-2">
+                <span class="text-[11px] text-slate-500 hover:text-slate-400 cursor-pointer">Forgot password? Reset via email</span>
+              </div>
+            </div>
+          </div>
+        `,
+        actions: [
+          { time: 2500, type: "moveCursor", target: "#demoEmailField" },
+          { time: 4000, type: "typeText", target: "#demoEmailField", text: "sales@growity.in" },
+          { time: 9000, type: "moveCursor", target: "#demoPasswordField" },
+          { time: 10500, type: "typeText", target: "#demoPasswordField", text: "••••••••••••" },
+          { time: 15000, type: "moveCursor", target: "#demoLoginBtn" },
+          { time: 17000, type: "click", target: "#demoLoginBtn" }
+        ]
+      },
+      {
+        id: 2,
+        title: "3. Multi-Vertical Selector",
+        subtitle: "വെർട്ടിക്കൽ സ്വിച്ചിംഗും ഡാറ്റ ഫിൽട്ടറിംഗും",
+        address: "https://crm.growity.in/dashboard",
+        duration: 28000,
+        subtitles: "ലോഗിൻ ചെയ്താൽ ടോപ്പ് ബാറിൽ കാണുന്ന പ്രധാനപ്പെട്ട ഫീച്ചറാണ് 'Vertical Selector'. നിങ്ങളൊരു അഡ്മിനോ മാനേജരോ ആണെങ്കിൽ, Growity Agency, Scalora, Growity Academy എന്നിവയിലേക്ക് ഒറ്റ ക്ലിക്കിൽ മാറാം. നിങ്ങൾ സെലക്ട് ചെയ്യുന്ന വെർട്ടിക്കലിന് അനുസരിച്ച് താഴെയുള്ള ലീഡുകളും ഡാഷ്‌ബോർഡും തനിയെ ഫിൽട്ടർ ചെയ്യപ്പെടും.",
+        voiceovers: {
+          manglish: "Login cheythu kazhinjaal top baril kaanunna valare pradhaana feature aanu Vertical Selector. Ningal oru Admino Managero aanenkil, Growity Agency, Scalora, Growity Academy ennivayilekku otta clickil switch cheyyaam. Ningal select cheyyunna vertical-nu anusarichu maathramaayi thaazheyulla leads-um data-yum filter cheyyapedum.",
+          malayalam: "ലോഗിൻ ചെയ്താൽ ടോപ്പ് ബാറിൽ കാണുന്ന പ്രധാനപ്പെട്ട ഫീച്ചറാണ് 'Vertical Selector'. നിങ്ങളൊരു അഡ്മിനോ മാനേജരോ ആണെങ്കിൽ, Growity Agency, Scalora, Growity Academy എന്നിവയിലേക്ക് ഒറ്റ ക്ലിക്കിൽ മാറാം. നിങ്ങൾ സെലക്ട് ചെയ്യുന്ന വെർട്ടിക്കലിന് അനുസരിച്ച് താഴെയുള്ള ലീഡുകളും ഡാഷ്‌ബോർഡും തനിയെ ഫിൽട്ടർ ചെയ്യപ്പെടും.",
+          english: "Once logged in, look at the top navigation bar for the Vertical Selector. This powerful multi-tenant filter lets you switch between Growity Agency, Scalora, and Growity Academy seamlessly. When you change the vertical, all records, leads, and dashboards automatically filter to that specific division."
+        },
+        render: () => `
+          <div class="w-full h-full flex flex-col justify-start p-4 fade-scene">
+            <div class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-xs font-bold text-white">G</span>
+                <span class="text-xs font-bold text-slate-100">Growity CRM</span>
+              </div>
+              
+              <div class="relative">
+                <button id="demoVerticalDropdown" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-blue-950/90 border border-blue-700 text-xs text-blue-200 font-semibold transition hover:bg-blue-900 shadow">
+                  <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                  <span id="selectedVerticalLabel">All Verticals</span>
+                  <span class="text-[10px] text-slate-400">▼</span>
+                </button>
+
+                <div id="demoDropdownMenu" class="absolute right-0 mt-2 w-52 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1.5 hidden flex flex-col gap-1 z-30">
+                  <div class="text-[10px] uppercase font-bold text-slate-400 px-2 py-1">Choose Vertical Scope</div>
+                  <button id="optAGY" class="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-200 hover:bg-blue-600 hover:text-white flex items-center justify-between">
+                    <span>Growity Agency</span> <span class="text-[10px] text-slate-400">AGY</span>
+                  </button>
+                  <button id="optSCL" class="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-200 hover:bg-blue-600 hover:text-white flex items-center justify-between">
+                    <span>Scalora</span> <span class="text-[10px] text-slate-400">SCL</span>
+                  </button>
+                  <button id="optACD" class="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-200 hover:bg-blue-600 hover:text-white flex items-center justify-between">
+                    <span>Growity Academy</span> <span class="text-[10px] text-emerald-400 font-bold">ACD</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="verticalBanner" class="p-4 rounded-xl bg-gradient-to-r from-blue-950/60 to-indigo-950/40 border border-blue-800/40 text-left">
+              <div class="flex items-center gap-2 mb-1">
+                <span id="badgeVertical" class="px-2 py-0.5 rounded bg-blue-600/30 text-blue-300 text-[10px] font-bold border border-blue-500/30">GLOBAL SCOPE</span>
+              </div>
+              <h4 id="bannerTitle" class="text-sm font-bold text-white">Welcome to Growity Solutions</h4>
+              <p id="bannerDesc" class="text-xs text-slate-400 mt-0.5">Centralized operations overview across all business entities.</p>
+            </div>
+          </div>
+        `,
+        actions: [
+          { time: 3000, type: "moveCursor", target: "#demoVerticalDropdown" },
+          { time: 5500, type: "click", target: "#demoVerticalDropdown" },
+          { time: 9000, type: "moveCursor", target: "#optACD" },
+          { time: 11000, type: "click", target: "#optACD" }
+        ]
+      },
+      {
+        id: 3,
+        title: "4. KPI Dashboard Cards",
+        subtitle: "ഹോണസ്റ്റ് മെട്രിക്സും റിയൽ-ടൈം സ്റ്റാറ്റ്സും",
+        address: "https://crm.growity.in/dashboard",
+        duration: 28000,
+        subtitles: "ഡാഷ്‌ബോർഡിൽ 4 പ്രധാനപ്പെട്ട KPI കാർഡുകളുണ്ട്: Total Leads, New Leads, Active Opportunities, Pipeline Value. തുടക്കത്തിൽ വ്യാജ സംഖ്യകൾ കാണിക്കുന്നതിന് പകരം സിസ്റ്റം യഥാർത്ഥ റിയൽ-ടൈം ഡാറ്റ മാത്രമേ കാണിക്കൂ. കറൻസി രൂപയിലാണ് (₹ INR) കണക്കാക്കുന്നത്.",
+        voiceovers: {
+          manglish: "Dashboardil 4 pradhaana KPI cardukal undu: Total Leads, New Leads, Active Opportunities, matrum Pipeline Value. Ivide fake numbers kaanikkunnathinu pakaram system eppozhum honest aayulla real-time data maathrame kaanikkoo. Pipeline value nammude Indian Rupee aayittu calculate cheyyunnu.",
+          malayalam: "ഡാഷ്‌ബോർഡിൽ 4 പ്രധാനപ്പെട്ട KPI കാർഡുകളുണ്ട്: Total Leads, New Leads, Active Opportunities, Pipeline Value. തുടക്കത്തിൽ വ്യാജ സംഖ്യകൾ കാണിക്കുന്നതിന് പകരം സിസ്റ്റം യഥാർത്ഥ റിയൽ-ടൈം ഡാറ്റ മാത്രമേ കാണിക്കൂ. കറൻസി രൂപയിലാണ് (₹ INR) കണക്കാക്കുന്നത്.",
+          english: "The dashboard displays 4 crucial KPI metric cards: Total Leads, New Leads, Active Opportunities, and total Pipeline Value. Adhering to the PRD data rule of honest zeros, no mock numbers are displayed. All revenue projections are calculated natively in Indian Rupees."
+        },
+        render: () => `
+          <div class="w-full h-full p-4 flex flex-col justify-start fade-scene">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-slate-100">Live Performance Overview</h3>
+              <span class="text-[11px] text-blue-400 font-mono">Scope: Growity Academy (ACD)</span>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
+              <div id="kpi1" class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl transition duration-300">
+                <span class="text-[11px] text-slate-400 font-medium">Total Leads</span>
+                <div class="text-2xl font-bold text-white mt-1">0</div>
+                <span class="text-[10px] text-slate-400">Total in database</span>
+              </div>
+              <div id="kpi2" class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl transition duration-300">
+                <span class="text-[11px] text-blue-400 font-medium">New Leads</span>
+                <div class="text-2xl font-bold text-white mt-1">0</div>
+                <span class="text-[10px] text-slate-400">Requires follow-up</span>
+              </div>
+              <div id="kpi3" class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl transition duration-300">
+                <span class="text-[11px] text-indigo-400 font-medium">Opportunities</span>
+                <div class="text-2xl font-bold text-white mt-1">0</div>
+                <span class="text-[10px] text-slate-400">Active negotiations</span>
+              </div>
+              <div id="kpi4" class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl transition duration-300">
+                <span class="text-[11px] text-emerald-400 font-medium">Pipeline Value</span>
+                <div class="text-2xl font-bold text-emerald-400 mt-1">₹0.00</div>
+                <span class="text-[10px] text-slate-400">Projected sales</span>
+              </div>
+            </div>
+
+            <div class="mt-4 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+              <span>🔒 <b>Row-Level Security:</b> Sales reps see assigned leads; Managers see team tree.</span>
+              <span class="text-emerald-400 font-mono text-[11px]">Strict Verification</span>
+            </div>
+          </div>
+        `,
+        actions: [
+          { time: 3000, type: "moveCursor", target: "#kpi1" },
+          { time: 5000, type: "highlight", target: "#kpi1" },
+          { time: 9000, type: "moveCursor", target: "#kpi2" },
+          { time: 11000, type: "highlight", target: "#kpi2" },
+          { time: 15000, type: "moveCursor", target: "#kpi3" },
+          { time: 17000, type: "highlight", target: "#kpi3" },
+          { time: 21000, type: "moveCursor", target: "#kpi4" },
+          { time: 23000, type: "highlight", target: "#kpi4" }
+        ]
+      },
+      {
+        id: 4,
+        title: "5. User Management & 4 Roles",
+        subtitle: "ടീം അഡ്മിനിസ്ട്രേഷനും റോളുകളും",
+        address: "https://crm.growity.in/settings/users",
+        duration: 30000,
+        subtitles: "അഡ്മിൻമാർക്ക് Settings → Users വഴി പുതിയ ജീവനക്കാരെ ചേർക്കാൻ സാധിക്കും. ഇവിടെ പ്രധാനമായും 4 റോളുകൾ ഉണ്ട്: Admin, CXO, Manager, Salesperson. ഓരോരുത്തർക്കും അനുവദിച്ചിട്ടുള്ള വെർട്ടിക്കലുകൾ നിശ്ചയിക്കാനും, ആവശ്യമെങ്കിൽ അവരുടെ അക്കൗണ്ട് ഡി-ആക്ടിവേറ്റ് ചെയ്യാനും അഡ്മിന് സാധിക്കും.",
+        voiceovers: {
+          manglish: "Adminmaarkku Settings menuvil poi Users vazhi puthiya employeesine add cheyyaan kazhiyum. Ivide pradhaana aayi 4 roles aanullathu: Admin, CXO, Manager, Salesperson. Oronnathum avarkku vendiya verticals assign cheyyaanum, vendi vannaal account de-activate cheyyaanum adminu saadhikkum.",
+          malayalam: "അഡ്മിൻമാർക്ക് Settings → Users വഴി പുതിയ ജീവനക്കാരെ ചേർക്കാൻ സാധിക്കും. ഇവിടെ പ്രധാനമായും 4 റോളുകൾ ഉണ്ട്: Admin, CXO, Manager, Salesperson. ഓരോരുത്തർക്കും അനുവദിച്ചിട്ടുള്ള വെർട്ടിക്കലുകൾ നിശ്ചയിക്കാനും, ആവശ്യമെങ്കിൽ അവരുടെ അക്കൗണ്ട് ഡി-ആക്ടിവേറ്റ് ചെയ്യാനും അഡ്മിന് സാധിക്കും.",
+          english: "Administrators manage organizational access under Settings → Users. Growity CRM defines four strict hierarchical roles: Admin, CXO, Manager, and Salesperson. Admins can provision users, link them to specific verticals, and toggle active status instantly."
+        },
+        render: () => `
+          <div class="w-full h-full p-4 flex flex-col justify-start fade-scene relative">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="text-sm font-bold text-white">Team & Permissions Management</h3>
+                <p class="text-[10px] text-slate-400">Configure multi-vertical user roles</p>
+              </div>
+              <button id="demoAddUserBtn" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold flex items-center gap-1 hover:bg-blue-500 shadow">
+                + Add User
+              </button>
+            </div>
+
+            <div class="w-full bg-slate-950 border border-slate-800 rounded-xl overflow-hidden text-left text-xs">
+              <div class="grid grid-cols-4 bg-slate-900 px-3 py-2 text-slate-400 font-semibold text-[11px] border-b border-slate-800">
+                <span>NAME</span>
+                <span>EMAIL</span>
+                <span>ROLE</span>
+                <span>STATUS</span>
+              </div>
+              <div class="grid grid-cols-4 px-3 py-2 border-b border-slate-800/60 items-center text-slate-300">
+                <span class="font-medium text-white">Sajid K H</span>
+                <span class="text-slate-400 font-mono text-[11px]">admin@growity.in</span>
+                <span class="text-blue-400 text-[11px] font-semibold">Admin</span>
+                <span class="text-emerald-400 text-[11px]">Active</span>
+              </div>
+              <div class="grid grid-cols-4 px-3 py-2 items-center text-slate-300">
+                <span class="font-medium text-white">Arun Kumar</span>
+                <span class="text-slate-400 font-mono text-[11px]">arun@growity.in</span>
+                <span class="text-amber-400 text-[11px] font-semibold">Salesperson</span>
+                <span class="text-emerald-400 text-[11px]">Active</span>
+              </div>
+            </div>
+
+            <div id="demoModal" class="absolute inset-4 bg-slate-900/98 border border-slate-700 rounded-xl p-4 shadow-2xl flex flex-col justify-between hidden z-30">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span class="text-blue-400">👤</span> Provision New Team Member
+                </h4>
+                <span class="text-slate-400 text-xs">✕</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-xs py-2">
+                <div>
+                  <span class="text-[10px] text-slate-400">Full Name</span>
+                  <div class="bg-slate-950 p-1.5 rounded border border-slate-800 text-slate-200 mt-0.5 font-medium">Nayana S</div>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400">Role</span>
+                  <div class="bg-blue-950 text-blue-300 p-1.5 rounded border border-blue-800 mt-0.5 font-semibold">Manager</div>
+                </div>
+                <div class="col-span-2">
+                  <span class="text-[10px] text-slate-400">Assigned Business Verticals</span>
+                  <div class="flex gap-2 mt-1">
+                    <span class="px-2.5 py-1 rounded bg-blue-600/30 text-blue-300 border border-blue-500/40 text-[11px] font-medium">✓ Growity Agency</span>
+                    <span class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700 text-[11px]">Scalora</span>
+                    <span class="px-2.5 py-1 rounded bg-blue-600/30 text-blue-300 border border-blue-500/40 text-[11px] font-medium">✓ Academy</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex justify-end gap-2 border-t border-slate-800 pt-2">
+                <button class="px-3 py-1 bg-slate-800 rounded text-[11px] text-slate-300">Cancel</button>
+                <button id="modalSaveBtn" class="px-3 py-1 bg-blue-600 rounded text-[11px] text-white font-semibold">Create & Invite</button>
+              </div>
+            </div>
+          </div>
+        `,
+        actions: [
+          { time: 3000, type: "moveCursor", target: "#demoAddUserBtn" },
+          { time: 5500, type: "click", target: "#demoAddUserBtn" },
+          { time: 14000, type: "moveCursor", target: "#modalSaveBtn" }
+        ]
+      },
+      {
+        id: 5,
+        title: "6. Leads & Pipeline Kanban",
+        subtitle: "സെയിൽസ് കാൻബൻ വർക്ക്ഫ്ലോയും ഉപസംഹാരവും",
+        address: "https://crm.growity.in/pipeline",
+        duration: 26000,
+        subtitles: "സെയിൽസ് ടീമിനായി തയ്യാറാക്കിയിട്ടുള്ള വിഷ്വൽ കാൻബൻ പൈപ്പ്‌ലൈൻ ഇതാ. ന്യൂ ലീഡ് മുതൽ കോൺടാക്റ്റഡ്, പ്രൊപ്പോസൽ, ഡീൽ വൺ വരെയുള്ള സ്റ്റേജുകളിലൂടെ ഡീലുകൾ ഡ്രാഗ് ആൻഡ് ഡ്രോപ്പ് ചെയ്ത് എളുപ്പത്തിൽ ക്ലോസ് ചെയ്യാം. ഇതോടെ ഫേസ് 1 പൂർത്തിയാകുന്നു, നന്ദി!",
+        voiceovers: {
+          manglish: "Sales team-nu vendi tayyaaraakkiya visual kanban pipeline ithaa. New Lead muthal Contacted, Proposal Sent, Deal Won vareyulla stagesiloode deals drag and drop cheythu eluppathil close cheyyaam. Ithrough Phase 1 foundation complete aakunnu, nandi!",
+          malayalam: "സെയിൽസ് ടീമിനായി തയ്യാറാക്കിയിട്ടുള്ള വിഷ്വൽ കാൻബൻ പൈപ്പ്‌ലൈൻ ഇതാ. ന്യൂ ലീഡ് മുതൽ കോൺടാക്റ്റഡ്, പ്രൊപ്പോസൽ, ഡീൽ വൺ വരെയുള്ള സ്റ്റേജുകളിലൂടെ ഡീലുകൾ ഡ്രാഗ് ആൻഡ് ഡ്രോപ്പ് ചെയ്ത് എളുപ്പത്തിൽ ക്ലോസ് ചെയ്യാം. ഇതോടെ ഫേസ് 1 പൂർത്തിയാകുന്നു, നന്ദി!",
+          english: "Finally, here is the visual sales pipeline Kanban board. Sales teams can track prospects through each stage: New Lead, Contacted, Proposal Sent, and Won. This concludes the Phase 1 walkthrough. Thank you for using Growity CRM!"
+        },
+        render: () => `
+          <div class="w-full h-full p-4 flex flex-col justify-start fade-scene">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="text-sm font-bold text-white">Sales Pipeline (Kanban Workflow)</h3>
+                <p class="text-[10px] text-slate-400">Track and close high-value business deals</p>
+              </div>
+              <span class="text-[11px] px-2.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-semibold">
+                Phase 1 Active
+              </span>
+            </div>
+
+            <div class="grid grid-cols-4 gap-2.5 flex-1">
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex flex-col gap-2">
+                <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400">
+                  <span>NEW LEAD</span> <span class="bg-slate-800 px-1.5 rounded text-[10px]">1</span>
+                </div>
+                <div id="kanbanCard1" class="bg-slate-900 p-2.5 rounded-lg border border-slate-700 text-left cursor-move shadow-md">
+                  <div class="text-[11px] font-bold text-white">Acme Global Tech</div>
+                  <div class="text-[10px] text-emerald-400 font-mono mt-0.5">₹75,000</div>
+                  <div class="text-[9px] text-slate-500 mt-1">Source: Referral</div>
+                </div>
+              </div>
+
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex flex-col gap-2">
+                <div class="flex items-center justify-between text-[11px] font-semibold text-blue-400">
+                  <span>CONTACTED</span> <span class="bg-slate-800 px-1.5 rounded text-[10px]">0</span>
+                </div>
+                <div class="border border-dashed border-slate-800/80 rounded-lg h-20 flex items-center justify-center text-[10px] text-slate-600">
+                  Ready to Move
+                </div>
+              </div>
+
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex flex-col gap-2">
+                <div class="flex items-center justify-between text-[11px] font-semibold text-indigo-400">
+                  <span>PROPOSAL</span> <span class="bg-slate-800 px-1.5 rounded text-[10px]">0</span>
+                </div>
+                <div class="border border-dashed border-slate-800/80 rounded-lg h-20 flex items-center justify-center text-[10px] text-slate-600">
+                  Ready to Move
+                </div>
+              </div>
+
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex flex-col gap-2">
+                <div class="flex items-center justify-between text-[11px] font-semibold text-emerald-400">
+                  <span>DEAL WON 🏆</span> <span class="bg-slate-800 px-1.5 rounded text-[10px]">0</span>
+                </div>
+                <div class="border border-dashed border-slate-800/80 rounded-lg h-20 flex items-center justify-center text-[10px] text-slate-600">
+                  Target Closed
+                </div>
+              </div>
+            </div>
+          </div>
+        `,
+        actions: [
+          { time: 3000, type: "moveCursor", target: "#kanbanCard1" },
+          { time: 5500, type: "highlight", target: "#kanbanCard1" }
+        ]
+      }
+    ];
+
+    let currentSceneIndex = 0;
+    let isPlaying = false;
+    let playbackSpeed = 1;
+    let audioEnabled = true;
+    let selectedVoiceLang = "manglish";
+    let sceneTimer = null;
+    let actionTimers = [];
+    let progressInterval = null;
+    let sceneStartTime = 0;
+
+    // Direct Browser Screen & Audio Recorder
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let captureStream = null;
+
+    async function startAutoRecordAndDownload() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        alert("Your browser does not support getDisplayMedia. Please use Chrome or Edge!");
+        return;
+      }
+
+      try {
+        alert("Select 'Chrome Tab' or 'This Tab' in the popup and make sure 'Share tab audio' is turned ON. The video will play and download automatically when finished!");
+
+        captureStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: "browser" },
+          audio: true
+        });
+
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(captureStream, {
+          mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
+        });
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            recordedChunks.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = 'Growity_CRM_Phase1_Tutorial_Video.webm';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+
+          document.getElementById("recordingBadge").classList.add("hidden");
+          document.getElementById("liveBadge").classList.remove("hidden");
+          alert("🎉 Download Complete! Your video file 'Growity_CRM_Phase1_Tutorial_Video.webm' has been saved to your Downloads folder!");
+        };
+
+        mediaRecorder.start();
+
+        // UI state
+        document.getElementById("recordingBadge").classList.remove("hidden");
+        document.getElementById("liveBadge").classList.add("hidden");
+
+        // Start playback from scene 0
+        jumpToScene(0);
+        play();
+
+      } catch (err) {
+        console.error("Recording error:", err);
+      }
+    }
+
+    function init() {
+      renderChapters();
+      populateScriptModal();
+      loadScene(0);
+
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.onvoiceschanged = () => {};
+      }
+    }
+
+    function renderChapters() {
+      const list = document.getElementById("chaptersList");
+      list.innerHTML = "";
+      scenes.forEach((s, idx) => {
+        const item = document.createElement("button");
+        item.className = `w-full text-left p-2.5 rounded-lg border transition text-xs flex flex-col gap-0.5 ${
+          idx === currentSceneIndex
+            ? "bg-blue-600/20 border-blue-500 text-blue-200"
+            : "bg-slate-950/60 border-slate-800 hover:bg-slate-800 text-slate-400"
+        }`;
+        item.onclick = () => jumpToScene(idx);
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-semibold ${idx === currentSceneIndex ? 'text-white' : 'text-slate-300'}">${s.title}</span>
+            <span class="text-[10px] font-mono text-slate-400">${Math.round(s.duration / 1000)}s</span>
+          </div>
+          <span class="text-[11px] text-slate-400 line-clamp-1">${s.subtitle}</span>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function loadScene(index) {
+      clearAllTimers();
+      currentSceneIndex = index;
+      const scene = scenes[index];
+
+      document.getElementById("addressBar").textContent = scene.address;
+      document.getElementById("sceneBadge").textContent = `Scene ${index + 1} / ${scenes.length}`;
+      document.getElementById("subtitlesText").textContent = scene.subtitles;
+
+      const container = document.getElementById("sceneContainer");
+      container.innerHTML = scene.render();
+
+      const cursor = document.getElementById("virtualCursor");
+      cursor.style.opacity = "0";
+      cursor.style.top = "20px";
+      cursor.style.left = "20px";
+
+      renderChapters();
+
+      if (audioEnabled && isPlaying) {
+        speakNarration(scene.voiceovers[selectedVoiceLang] || scene.voiceovers.manglish);
+      }
+
+      if (isPlaying) {
+        startSceneActions(scene);
+      }
+    }
+
+    function startSceneActions(scene) {
+      sceneStartTime = Date.now();
+      const adjustedDuration = scene.duration / playbackSpeed;
+
+      scene.actions.forEach(action => {
+        const t = setTimeout(() => {
+          executeAction(action);
+        }, action.time / playbackSpeed);
+        actionTimers.push(t);
+      });
+
+      sceneTimer = setTimeout(() => {
+        if (currentSceneIndex < scenes.length - 1) {
+          loadScene(currentSceneIndex + 1);
+        } else {
+          // Finished all scenes!
+          pause();
+          jumpToScene(0);
+
+          // If recording, stop and download!
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+            if (captureStream) {
+              captureStream.getTracks().forEach(track => track.stop());
+            }
+          }
+        }
+      }, adjustedDuration);
+
+      startProgressTracking(adjustedDuration);
+    }
+
+    function executeAction(act) {
+      const cursor = document.getElementById("virtualCursor");
+      const ring = document.getElementById("cursorClickRing");
+      const targetEl = document.querySelector(act.target);
+
+      if (act.type === "moveCursor" && targetEl) {
+        const rect = targetEl.getBoundingClientRect();
+        const viewportRect = document.getElementById("viewport").getBoundingClientRect();
+        const x = rect.left - viewportRect.left + rect.width / 2;
+        const y = rect.top - viewportRect.top + rect.height / 2;
+
+        cursor.style.opacity = "1";
+        cursor.style.top = `${y}px`;
+        cursor.style.left = `${x}px`;
+      } else if (act.type === "typeText" && targetEl) {
+        let i = 0;
+        targetEl.textContent = "";
+        const typer = setInterval(() => {
+          if (i < act.text.length) {
+            targetEl.textContent += act.text[i];
+            i++;
+          } else {
+            clearInterval(typer);
+          }
+        }, 90 / playbackSpeed);
+      } else if (act.type === "click" && targetEl) {
+        ring.style.opacity = "1";
+        ring.style.transform = "scale(1.4)";
+        setTimeout(() => {
+          ring.style.opacity = "0";
+          ring.style.transform = "scale(1)";
+        }, 300);
+
+        if (act.target === "#demoLoginBtn") {
+          targetEl.textContent = "Authenticating...";
+          targetEl.classList.add("bg-emerald-600");
+        } else if (act.target === "#demoVerticalDropdown") {
+          const menu = document.getElementById("demoDropdownMenu");
+          if (menu) menu.classList.toggle("hidden");
+        } else if (act.target === "#optACD") {
+          const label = document.getElementById("selectedVerticalLabel");
+          if (label) label.textContent = "Growity Academy";
+          const badge = document.getElementById("badgeVertical");
+          if (badge) {
+            badge.textContent = "ACADEMY DIVISION (ACD)";
+            badge.className = "px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 text-[10px] font-bold border border-emerald-800";
+          }
+          const title = document.getElementById("bannerTitle");
+          if (title) title.textContent = "Growity Academy Admissions & Courses";
+          const desc = document.getElementById("bannerDesc");
+          if (desc) desc.textContent = "Cohorts, student enrollment counseling, and academic batches.";
+          const menu = document.getElementById("demoDropdownMenu");
+          if (menu) menu.classList.add("hidden");
+        } else if (act.target === "#demoAddUserBtn") {
+          const modal = document.getElementById("demoModal");
+          if (modal) modal.classList.remove("hidden");
+        }
+      } else if (act.type === "highlight" && targetEl) {
+        targetEl.classList.add("active-card");
+        setTimeout(() => {
+          targetEl.classList.remove("active-card");
+        }, 2200 / playbackSpeed);
+      }
+    }
+
+    function startProgressTracking(totalDuration) {
+      clearInterval(progressInterval);
+      const bar = document.getElementById("progressBar");
+      const timeDisplay = document.getElementById("timeDisplay");
+
+      progressInterval = setInterval(() => {
+        const elapsed = Date.now() - sceneStartTime;
+        const pct = Math.min(100, (elapsed / totalDuration) * 100);
+        bar.style.width = `${pct}%`;
+
+        const secElapsed = Math.floor(elapsed / 1000);
+        const totalSec = Math.floor(totalDuration / 1000);
+        timeDisplay.textContent = `00:${secElapsed.toString().padStart(2, '0')} / 00:${totalSec.toString().padStart(2, '0')}`;
+      }, 100);
+    }
+
+    function clearAllTimers() {
+      clearTimeout(sceneTimer);
+      clearInterval(progressInterval);
+      actionTimers.forEach(t => clearTimeout(t));
+      actionTimers = [];
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    function togglePlayPause() {
+      if (isPlaying) {
+        pause();
+      } else {
+        play();
+      }
+    }
+
+    function play() {
+      isPlaying = true;
+      document.getElementById("playIcon").classList.add("hidden");
+      document.getElementById("pauseIcon").classList.remove("hidden");
+      loadScene(currentSceneIndex);
+    }
+
+    function pause() {
+      isPlaying = false;
+      document.getElementById("playIcon").classList.remove("hidden");
+      document.getElementById("pauseIcon").classList.add("hidden");
+      clearAllTimers();
+    }
+
+    function nextScene() {
+      if (currentSceneIndex < scenes.length - 1) {
+        loadScene(currentSceneIndex + 1);
+      }
+    }
+
+    function prevScene() {
+      if (currentSceneIndex > 0) {
+        loadScene(currentSceneIndex - 1);
+      }
+    }
+
+    function jumpToScene(idx) {
+      loadScene(idx);
+      if (!isPlaying) play();
+    }
+
+    function replayCurrent() {
+      loadScene(currentSceneIndex);
+      if (!isPlaying) play();
+    }
+
+    function setPlaybackSpeed(val) {
+      playbackSpeed = parseFloat(val);
+      if (isPlaying) {
+        loadScene(currentSceneIndex);
+      }
+    }
+
+    function changeVoiceLanguage(lang) {
+      selectedVoiceLang = lang;
+      if (isPlaying) {
+        speakNarration(scenes[currentSceneIndex].voiceovers[selectedVoiceLang] || scenes[currentSceneIndex].voiceovers.manglish);
+      }
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById("audioIcon").textContent = audioEnabled ? "🔊" : "🔇";
+      document.getElementById("audioText").textContent = audioEnabled ? "Mute" : "Unmute";
+      if (!audioEnabled) {
+        window.speechSynthesis.cancel();
+      } else if (isPlaying) {
+        speakNarration(scenes[currentSceneIndex].voiceovers[selectedVoiceLang]);
+      }
+    }
+
+    function speakNarration(text) {
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 0.92 * playbackSpeed;
+      utter.pitch = 1.0;
+
+      const voices = window.speechSynthesis.getVoices();
+      
+      if (selectedVoiceLang === "malayalam") {
+        const mlVoice = voices.find(v => v.lang.includes("ml"));
+        if (mlVoice) utter.voice = mlVoice;
+      } else if (selectedVoiceLang === "manglish") {
+        const inVoice = voices.find(v => v.lang.includes("en-IN") || v.name.includes("India") || v.name.includes("Ravi") || v.name.includes("Neerja"));
+        if (inVoice) utter.voice = inVoice;
+      } else {
+        const enVoice = voices.find(v => v.lang.includes("en-IN") || v.lang.includes("en-US") || v.lang.includes("en"));
+        if (enVoice) utter.voice = enVoice;
+      }
+
+      window.speechSynthesis.speak(utter);
+    }
+
+    function populateScriptModal() {
+      const box = document.getElementById("fullScriptBox");
+      box.innerHTML = "";
+      scenes.forEach(s => {
+        const div = document.createElement("div");
+        div.className = "p-3 rounded-lg bg-slate-950 border border-slate-800";
+        div.innerHTML = `
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-blue-400">${s.title}</span>
+            <span class="text-[10px] text-slate-500">${Math.round(s.duration / 1000)}s</span>
+          </div>
+          <p class="text-white mb-2 leading-relaxed"><b>Malayalam:</b> ${s.subtitles}</p>
+          <p class="text-slate-400 font-mono text-[11px] leading-relaxed"><b>Manglish / Voice:</b> ${s.voiceovers.manglish}</p>
+        `;
+        box.appendChild(div);
+      });
+    }
+
+    function copyFullScript() {
+      const fullText = scenes.map(s => `[${s.title}]\nMalayalam: ${s.subtitles}\nManglish: ${s.voiceovers.manglish}\n`).join("\n---\n\n");
+      navigator.clipboard.writeText(fullText).then(() => {
+        alert("Complete Voiceover Script copied to clipboard!");
+      });
+    }
+
+    function openScriptModal() { document.getElementById("scriptModal").classList.remove("hidden"); }
+    function closeScriptModal() { document.getElementById("scriptModal").classList.add("hidden"); }
+    function openHelpModal() { document.getElementById("helpModal").classList.remove("hidden"); }
+    function closeHelpModal() { document.getElementById("helpModal").classList.add("hidden"); }
+    function seekTimeline(e) {}
+
+    window.addEventListener("DOMContentLoaded", () => {
+      init();
+    });
+  </script>
+</body>
+</html>
